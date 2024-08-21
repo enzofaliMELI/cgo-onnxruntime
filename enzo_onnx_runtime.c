@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <onnxruntime_c_api.h>
 
-void m_runONNXRuntime() {
+void runONNXRuntime() {
     // Initialize ONNX Runtime environment
     OrtEnv* env;
     OrtStatus* status;

@@ -1,14 +1,8 @@
-package main
-
-/*
-#cgo CFLAGS: -I/opt/homebrew/Cellar/onnxruntime/1.17.1/include/onnxruntime
-#cgo LDFLAGS: -L/opt/homebrew/Cellar/onnxruntime/1.17.1/lib -lonnxruntime
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <onnxruntime_c_api.h>
 
-void runONNXRuntime() {
+void m_runONNXRuntime() {
     // Initialize ONNX Runtime environment
     OrtEnv* env;
     OrtStatus* status;
@@ -113,11 +107,4 @@ void runONNXRuntime() {
     g_ort->ReleaseSession(session);
     g_ort->ReleaseEnv(env);
 
-}
-
-*/
-import "C"
-
-func main() {
-	C.runONNXRuntime()
 }

@@ -32,7 +32,7 @@ void runONNXRuntime() {
     }
 
     // Load the ONNX model
-    const char* model_path = "naive_model.onnx";  // Update with your model path
+    const char* model_path = "resources/naive_model.onnx";  // Update with your model path
     OrtSession* session;
     status = g_ort->CreateSession(env, model_path, session_options, &session);
     if (status != NULL) {

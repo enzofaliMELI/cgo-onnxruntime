@@ -4,9 +4,6 @@ package main
 #cgo CFLAGS: -I/opt/homebrew/Cellar/onnxruntime/1.17.1/include/onnxruntime
 #cgo LDFLAGS: -L/opt/homebrew/Cellar/onnxruntime/1.17.1/lib -lonnxruntime -L. -lmyfuncs -lrunonnx
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <onnxruntime_c_api.h>
 #include "myfuncs.h"
 #include "runonnx.h"
 

@@ -2,11 +2,12 @@ package main
 
 /*
 #cgo CFLAGS: -I/opt/homebrew/Cellar/onnxruntime/1.17.1/include/onnxruntime
-#cgo LDFLAGS: -L/opt/homebrew/Cellar/onnxruntime/1.17.1/lib -lonnxruntime
+#cgo LDFLAGS: -L/opt/homebrew/Cellar/onnxruntime/1.17.1/lib -lonnxruntime -L. -lmyfuncs
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <onnxruntime_c_api.h>
+#include "myfuncs.h"
 
 void runONNXRuntime() {
     // Initialize ONNX Runtime environment
@@ -120,4 +121,12 @@ import "C"
 
 func main() {
 	C.runONNXRuntime()
+
+	// Define two integers to pass to the C function
+	var a, b C.int
+	a = 6
+	b = 10
+
+	// Call the C function `addNumbers`
+	C.addNumbers(a, b)
 }

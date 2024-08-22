@@ -8,7 +8,10 @@ package main
 #include "myfuncs.h"
 */
 import "C"
-import "unsafe"
+import (
+	"fmt"
+	"unsafe"
+)
 
 func main() {
 	// Define two integers to pass to the C function
@@ -23,4 +26,6 @@ func main() {
 	defer C.free(unsafe.Pointer(modelPath))
 
 	C.runONNXRuntime(modelPath)
+
+	fmt.Println("Go application finished.")
 }

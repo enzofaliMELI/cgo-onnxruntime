@@ -19,8 +19,11 @@ func main() {
 	a = 5
 	b = 10
 
-	// Call the C function `addNumbers`
-	C.addNumbers(a, b)
+	// Call the C function `addNumbers` and capture the returned result
+	result := C.addNumbers(a, b)
+
+	// Print the result in Go
+	fmt.Printf("The result of adding %d and %d is %d\n", int(a), int(b), int(result))
 
 	modelPath := C.CString("resources/naive_model.onnx")
 	defer C.free(unsafe.Pointer(modelPath))

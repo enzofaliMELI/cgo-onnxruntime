@@ -1,12 +1,11 @@
 package main
 
 /*
-#cgo CFLAGS: -I/opt/homebrew/Cellar/onnxruntime/1.17.1/include/onnxruntime -Ionnx
-#cgo LDFLAGS: -L/opt/homebrew/Cellar/onnxruntime/1.17.1/lib -lonnxruntime -Lonnx -lrunonnx -lmyfuncs
+#cgo CFLAGS: -I./onnx -I/usr/local/onnxruntime/include
+#cgo LDFLAGS: -L./onnx -lmyfuncs -lrunonnx -L/usr/local/onnxruntime/lib -lonnxruntime
 
-#include "myfuncs.h"
 #include "runonnx.h"
-
+#include "myfuncs.h"
 */
 import "C"
 import "unsafe"

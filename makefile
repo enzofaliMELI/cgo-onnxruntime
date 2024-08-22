@@ -5,26 +5,25 @@ CC = gcc
 SRC_DIR = src/onnxruntime
 BUILD_DIR = build/onnxruntime
 
-# Files
-CFILES = $(SRC_DIR)/runonnx.c $(SRC_DIR)/myfuncs.c
-HFILES = $(SRC_DIR)/runonnx.h $(SRC_DIR)/myfuncs.h
-OBJECTS = $(BUILD_DIR)/runonnx.o $(BUILD_DIR)/myfuncs.o
-LIBS = $(SRC_DIR)/librunonnx.a $(SRC_DIR)/libmyfuncs.a
+# Automatically find all .c and .h files
+CFILES = $(wildcard $(SRC_DIR)/*.c)
+HFILES = $(wildcard $(SRC_DIR)/*.h)
+
+# Generate corresponding .o and .a file names
+OBJECTS = $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/%.o, $(CFILES))
+LIBS = $(patsubst $(SRC_DIR)/%.c, $(SRC_DIR)/lib%.a, $(CFILES))
 
 # Default target: build libraries and run the Go program
 all: $(LIBS)
 
 # Compile C files into object files
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c $(SRC_DIR)/%.h
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 	@echo "Compiled $<"
 
 # Create static libraries from object files
-$(SRC_DIR)/librunonnx.a: $(BUILD_DIR)/runonnx.o
-	ar rcs $@ $^
-
-$(SRC_DIR)/libmyfuncs.a: $(BUILD_DIR)/myfuncs.o
+$(SRC_DIR)/lib%.a: $(BUILD_DIR)/%.o
 	ar rcs $@ $^
 
 # Run the Go program

@@ -1,8 +1,7 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <onnxruntime_c_api.h>
+#include "runonnx.h"
 
-void runONNXRuntime() {
+void runONNXRuntime2(const char* model_path) {
     // Initialize ONNX Runtime environment
     OrtEnv* env;
     OrtStatus* status;
@@ -25,8 +24,7 @@ void runONNXRuntime() {
         return;
     }
 
-    // Load the ONNX model
-    const char* model_path = "naive_model.onnx";  // Update with your model path
+    // Load the ONNX model using the passed model path
     OrtSession* session;
     status = g_ort->CreateSession(env, model_path, session_options, &session);
     if (status != NULL) {
@@ -106,5 +104,4 @@ void runONNXRuntime() {
     g_ort->ReleaseMemoryInfo(memory_info);
     g_ort->ReleaseSession(session);
     g_ort->ReleaseEnv(env);
-
 }

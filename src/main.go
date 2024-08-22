@@ -1,8 +1,8 @@
 package main
 
 /*
-#cgo CFLAGS: -I/opt/homebrew/Cellar/onnxruntime/1.17.1/include/onnxruntime
-#cgo LDFLAGS: -L/opt/homebrew/Cellar/onnxruntime/1.17.1/lib -lonnxruntime -L. -lmyfuncs -lrunonnx
+#cgo CFLAGS: -I/opt/homebrew/Cellar/onnxruntime/1.17.1/include/onnxruntime -Ionnx
+#cgo LDFLAGS: -L/opt/homebrew/Cellar/onnxruntime/1.17.1/lib -lonnxruntime -Lonnx -lrunonnx -lmyfuncs
 
 #include "myfuncs.h"
 #include "runonnx.h"

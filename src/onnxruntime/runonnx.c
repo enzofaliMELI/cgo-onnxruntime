@@ -1,7 +1,8 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "runonnx.h"
 
-void runONNXRuntime(const char* model_path) {
+float* runONNXRuntime(const char* model_path) {
     // Initialize ONNX Runtime environment
     OrtEnv* env;
     OrtStatus* status;
@@ -11,7 +12,7 @@ void runONNXRuntime(const char* model_path) {
     if (status != NULL) {
         printf("Error: %s\n", g_ort->GetErrorMessage(status));
         g_ort->ReleaseStatus(status);
-        return;
+        return NULL;
     }
 
     // Create a session options object
@@ -21,7 +22,7 @@ void runONNXRuntime(const char* model_path) {
         printf("Failed to create session options.\nError: %s\n", g_ort->GetErrorMessage(status));
         g_ort->ReleaseStatus(status);
         g_ort->ReleaseEnv(env);
-        return;
+        return NULL;
     }
 
     // Load the ONNX model using the passed model path
@@ -32,7 +33,7 @@ void runONNXRuntime(const char* model_path) {
         g_ort->ReleaseStatus(status);
         g_ort->ReleaseSessionOptions(session_options);
         g_ort->ReleaseEnv(env);
-        return;
+        return NULL;
     }
 
     // Clean up session options
@@ -51,7 +52,7 @@ void runONNXRuntime(const char* model_path) {
         g_ort->ReleaseStatus(status);
         g_ort->ReleaseSession(session);
         g_ort->ReleaseEnv(env);
-        return;
+        return NULL;
     }
 
     // Create the input tensor
@@ -63,7 +64,7 @@ void runONNXRuntime(const char* model_path) {
         g_ort->ReleaseMemoryInfo(memory_info);
         g_ort->ReleaseSession(session);
         g_ort->ReleaseEnv(env);
-        return;
+        return NULL;
     }
 
     // Specify the input and output names
@@ -82,19 +83,28 @@ void runONNXRuntime(const char* model_path) {
         g_ort->ReleaseMemoryInfo(memory_info);
         g_ort->ReleaseSession(session);
         g_ort->ReleaseEnv(env);
-        return;
+        return NULL;
     }
 
-    // Retrieve and print the output tensor data
+    // Retrieve the output tensor data
     float* output_data;
     status = g_ort->GetTensorMutableData(output_tensor, (void**)&output_data);
     if (status != NULL) {
         printf("Failed to get output tensor data.\nError: %s\n", g_ort->GetErrorMessage(status));
         g_ort->ReleaseStatus(status);
-    } else {
-        // Assume the output tensor is a 1D array of floats
+        g_ort->ReleaseValue(output_tensor);
+        g_ort->ReleaseValue(input_tensor);
+        g_ort->ReleaseMemoryInfo(memory_info);
+        g_ort->ReleaseSession(session);
+        g_ort->ReleaseEnv(env);
+        return NULL;
+    }
+
+    // Allocate memory for the result and copy the output data
+    float* result = (float*)malloc(10 * sizeof(float));
+    if (result != NULL) {
         for (int i = 0; i < 10; i++) {
-            printf("output[%d] = %f\n", i, output_data[i]);
+            result[i] = output_data[i];
         }
     }
 
@@ -104,4 +114,6 @@ void runONNXRuntime(const char* model_path) {
     g_ort->ReleaseMemoryInfo(memory_info);
     g_ort->ReleaseSession(session);
     g_ort->ReleaseEnv(env);
+
+    return result;
 }

@@ -1,37 +1,28 @@
-# Start with a base image that has Go installed
-FROM golang:1.20
+# Use an official Go image with Debian as the base image
+FROM golang:1.22
 
-# Set environment variables for ONNX Runtime version
-ENV ORT_VERSION=1.17.1
+# Install necessary build tools
+RUN apt-get update && apt-get install -y gcc g++ make curl
 
-# Install necessary tools and dependencies
-RUN apt-get update && apt-get install -y \
-    curl \
-    build-essential \
-    cmake \
-    libprotobuf-dev \
-    protobuf-compiler \
-    && rm -rf /var/lib/apt/lists/*
+# Set the version of ONNX Runtime you want to install
+ENV ONNXRUNTIME_VERSION=1.17.1
 
-# Download and install ONNX Runtime
-RUN curl -L https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VERSION}/onnxruntime-linux-x64-${ORT_VERSION}.tgz -o onnxruntime-linux.tgz \
-    && tar -xzvf onnxruntime-linux.tgz \
-    && mv onnxruntime-linux-x64-${ORT_VERSION} /opt/onnxruntime \
-    && rm onnxruntime-linux.tgz
+# Download and install the ONNX Runtime C library for ARM64
+RUN curl -L https://github.com/microsoft/onnxruntime/releases/download/v${ONNXRUNTIME_VERSION}/onnxruntime-linux-aarch64-${ONNXRUNTIME_VERSION}.tgz \
+    | tar xz -C /usr/local && \
+    ln -s /usr/local/onnxruntime-linux-aarch64-${ONNXRUNTIME_VERSION} /usr/local/onnxruntime
 
-# Set environment variables for ONNX Runtime
-ENV CGO_CFLAGS="-I/opt/onnxruntime/include"
-ENV CGO_LDFLAGS="-L/opt/onnxruntime/lib -lonnxruntime"
-ENV LD_LIBRARY_PATH="/opt/onnxruntime/lib:$LD_LIBRARY_PATH"
+# Set environment variables for the ONNX Runtime library
+ENV CFLAGS="-I/usr/local/onnxruntime/include"
+ENV LDFLAGS="-L/usr/local/onnxruntime/lib -lonnxruntime"
+ENV LD_LIBRARY_PATH=/usr/local/onnxruntime/lib
 
-# Set the working directory inside the container
+# Copy the source code and Makefile into the container
 WORKDIR /app
-
-# Copy the Go application source code
 COPY . .
 
-# Build the Go application
-RUN go build -o myapp
+# Build the application using Makefile
+RUN make
 
-# Command to run the Go application
-CMD ["./myapp"]
+# Run the Go application
+CMD ["make", "run"]

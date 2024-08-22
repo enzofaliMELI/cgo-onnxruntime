@@ -1,15 +1,17 @@
 package main
 
 /*
-#cgo CFLAGS: -I/opt/homebrew/Cellar/onnxruntime/1.17.1/include/onnxruntime -Ionnx
-#cgo LDFLAGS: -L/opt/homebrew/Cellar/onnxruntime/1.17.1/lib -lonnxruntime -Lonnx -lrunonnx -lmyfuncs
+#cgo CFLAGS: -I./onnxruntime -I/usr/local/onnxruntime/include
+#cgo LDFLAGS: -L./onnxruntime -lmyfuncs -lrunonnx -L/usr/local/onnxruntime/lib -lonnxruntime
 
-#include "myfuncs.h"
 #include "runonnx.h"
-
+#include "myfuncs.h"
 */
 import "C"
-import "unsafe"
+import (
+	"fmt"
+	"unsafe"
+)
 
 func main() {
 	// Define two integers to pass to the C function
@@ -17,11 +19,26 @@ func main() {
 	a = 5
 	b = 10
 
-	// Call the C function `addNumbers`
-	C.addNumbers(a, b)
+	// Call the C function `addNumbers` and capture the returned result
+	result := C.addNumbers(a, b)
+
+	// Print the result in Go
+	fmt.Printf("The result of adding %d and %d is %d\n", int(a), int(b), int(result))
 
 	modelPath := C.CString("resources/naive_model.onnx")
 	defer C.free(unsafe.Pointer(modelPath))
 
-	C.runONNXRuntime(modelPath)
+	// Call the C function `runONNXRuntime` and capture the result
+	tensorResult := C.runONNXRuntime(modelPath)
+	defer C.free(unsafe.Pointer(tensorResult))
+
+	// Convert the C pointer to a Go slice
+	output := (*[10]C.float)(unsafe.Pointer(tensorResult))[:10:10]
+
+	// Print the result in Go
+	for i := 0; i < 10; i++ {
+		fmt.Printf("output[%d] = %f\n", i, float32(output[i]))
+	}
+
+	fmt.Println("Go application finished.")
 }

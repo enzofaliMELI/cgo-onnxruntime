@@ -28,7 +28,17 @@ func main() {
 	modelPath := C.CString("resources/naive_model.onnx")
 	defer C.free(unsafe.Pointer(modelPath))
 
-	C.runONNXRuntime(modelPath)
+	// Call the C function `runONNXRuntime` and capture the result
+	tensorResult := C.runONNXRuntime(modelPath)
+	defer C.free(unsafe.Pointer(tensorResult))
+
+	// Convert the C pointer to a Go slice
+	output := (*[10]C.float)(unsafe.Pointer(tensorResult))[:10:10]
+
+	// Print the result in Go
+	for i := 0; i < 10; i++ {
+		fmt.Printf("output[%d] = %f\n", i, float32(output[i]))
+	}
 
 	fmt.Println("Go application finished.")
 }

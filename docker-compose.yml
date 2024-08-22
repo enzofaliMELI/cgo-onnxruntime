@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  my-cgo-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: make run
+    environment:
+      - CFLAGS=-I/usr/local/onnxruntime/include
+      - LDFLAGS=-L/usr/local/onnxruntime/lib -lonnxruntime

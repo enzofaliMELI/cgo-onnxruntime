@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "runonnx.h"
 
-void runONNXRuntime2(const char* model_path) {
+void runONNXRuntime(const char* model_path) {
     // Initialize ONNX Runtime environment
     OrtEnv* env;
     OrtStatus* status;

@@ -2,11 +2,15 @@
 #include <stdlib.h>
 #include "runonnx.h"
 
-float* runONNXRuntime(const char* model_path) {
-    // Initialize ONNX Runtime environment
+// Function to retrieve the OrtApi pointer
+const OrtApi* getOrtApi() {
+    return OrtGetApiBase()->GetApi(ORT_API_VERSION);
+}
+
+// Function to create the ONNX Runtime environment
+OrtEnv* createEnv(const OrtApi* g_ort) {
     OrtEnv* env;
     OrtStatus* status;
-    const OrtApi* g_ort = OrtGetApiBase()->GetApi(ORT_API_VERSION);
 
     status = g_ort->CreateEnv(ORT_LOGGING_LEVEL_WARNING, "test", &env);
     if (status != NULL) {
@@ -15,105 +19,95 @@ float* runONNXRuntime(const char* model_path) {
         return NULL;
     }
 
-    // Create a session options object
+    return env;
+}
+
+// Function to create the ONNX Runtime session options
+OrtSessionOptions* createSessionOptions(const OrtApi* g_ort) {
     OrtSessionOptions* session_options;
+    OrtStatus* status;
+
     status = g_ort->CreateSessionOptions(&session_options);
     if (status != NULL) {
         printf("Failed to create session options.\nError: %s\n", g_ort->GetErrorMessage(status));
         g_ort->ReleaseStatus(status);
-        g_ort->ReleaseEnv(env);
         return NULL;
     }
 
-    // Load the ONNX model using the passed model path
+    return session_options;
+}
+
+// Function to create the ONNX Runtime session
+OrtSession* createSession(const OrtApi* g_ort, OrtEnv* env, const char* model_path, OrtSessionOptions* session_options) {
     OrtSession* session;
+    OrtStatus* status;
+
     status = g_ort->CreateSession(env, model_path, session_options, &session);
     if (status != NULL) {
         printf("Failed to load the ONNX model.\nError: %s\n", g_ort->GetErrorMessage(status));
         g_ort->ReleaseStatus(status);
-        g_ort->ReleaseSessionOptions(session_options);
-        g_ort->ReleaseEnv(env);
         return NULL;
     }
 
-    // Clean up session options
-    g_ort->ReleaseSessionOptions(session_options);
+    return session;
+}
 
-    // Prepare input tensor with shape [10]
-    const int64_t input_shape[1] = { 10 };  // 1D tensor with 10 elements
-    size_t input_tensor_size = 10 * sizeof(float);
-    float input_tensor_data[10] = { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f };  // Example input
+OrtValue* createOrtTensor(const OrtApi* g_ort, const float* input_data, size_t input_data_size, const int64_t* input_shape, size_t input_dim) {
+    OrtMemoryInfo* memory_info;
+    OrtValue* input_tensor;
+    OrtStatus* status;
 
     // Allocate memory info for the input tensor
-    OrtMemoryInfo* memory_info;
     status = g_ort->CreateCpuMemoryInfo(OrtArenaAllocator, OrtMemTypeDefault, &memory_info);
     if (status != NULL) {
         printf("Failed to create memory info.\nError: %s\n", g_ort->GetErrorMessage(status));
         g_ort->ReleaseStatus(status);
-        g_ort->ReleaseSession(session);
-        g_ort->ReleaseEnv(env);
         return NULL;
     }
 
     // Create the input tensor
-    OrtValue* input_tensor;
-    status = g_ort->CreateTensorWithDataAsOrtValue(memory_info, input_tensor_data, input_tensor_size, input_shape, 1, ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT, &input_tensor);
+    status = g_ort->CreateTensorWithDataAsOrtValue(memory_info, (void*)input_data, input_data_size, input_shape, input_dim, ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT, &input_tensor);
     if (status != NULL) {
         printf("Failed to create input tensor.\nError: %s\n", g_ort->GetErrorMessage(status));
         g_ort->ReleaseStatus(status);
         g_ort->ReleaseMemoryInfo(memory_info);
-        g_ort->ReleaseSession(session);
-        g_ort->ReleaseEnv(env);
         return NULL;
     }
 
-    // Specify the input and output names
-    const char* input_names[] = { "input" };
-    const char* output_names[] = { "output" };
+    // Release memory info after tensor creation
+    g_ort->ReleaseMemoryInfo(memory_info);
 
-    // Prepare the output tensor (we'll allocate it later)
+    return input_tensor;
+}
+
+// Function to run the model inference, including creating and returning the output tensor
+OrtValue* runInference(const OrtApi* g_ort, OrtSession* session, const char** input_names, const OrtValue* const* input_tensors, size_t input_count, const char** output_names, size_t output_count) {
+    OrtStatus* status;
     OrtValue* output_tensor = NULL;
 
     // Run the model inference
-    status = g_ort->Run(session, NULL, input_names, (const OrtValue*[]){ input_tensor }, 1, output_names, 1, &output_tensor);
+    status = g_ort->Run(session, NULL, input_names, input_tensors, input_count, output_names, output_count, &output_tensor);
     if (status != NULL) {
         printf("Failed to run model inference.\nError: %s\n", g_ort->GetErrorMessage(status));
         g_ort->ReleaseStatus(status);
-        g_ort->ReleaseValue(input_tensor);
-        g_ort->ReleaseMemoryInfo(memory_info);
-        g_ort->ReleaseSession(session);
-        g_ort->ReleaseEnv(env);
         return NULL;
     }
 
+    return output_tensor;  // Return the output tensor
+}
+
+// Function to retrieve and return the tensor data
+float* getTensorData(const OrtApi* g_ort, OrtValue* tensor) {
+    float* output_data = NULL;
+    OrtStatus* status;
+
     // Retrieve the output tensor data
-    float* output_data;
-    status = g_ort->GetTensorMutableData(output_tensor, (void**)&output_data);
+    status = g_ort->GetTensorMutableData(tensor, (void**)&output_data);
     if (status != NULL) {
         printf("Failed to get output tensor data.\nError: %s\n", g_ort->GetErrorMessage(status));
         g_ort->ReleaseStatus(status);
-        g_ort->ReleaseValue(output_tensor);
-        g_ort->ReleaseValue(input_tensor);
-        g_ort->ReleaseMemoryInfo(memory_info);
-        g_ort->ReleaseSession(session);
-        g_ort->ReleaseEnv(env);
         return NULL;
     }
 
-    // Allocate memory for the result and copy the output data
-    float* result = (float*)malloc(10 * sizeof(float));
-    if (result != NULL) {
-        for (int i = 0; i < 10; i++) {
-            result[i] = output_data[i];
-        }
-    }
-
-    // Clean up
-    g_ort->ReleaseValue(output_tensor);
-    g_ort->ReleaseValue(input_tensor);
-    g_ort->ReleaseMemoryInfo(memory_info);
-    g_ort->ReleaseSession(session);
-    g_ort->ReleaseEnv(env);
-
-    return result;
+    return output_data;  // Return the pointer to the data
 }

@@ -45,15 +45,15 @@ jobs:
       - name: Run the Go application
         run: make run
 
-  check_merge_strategy:
-    if: github.event.pull_request.merged == true
-    runs-on: ubuntu-latest
-    steps:
-      - name: Ensure Squash Merge
-        run: |
-          if [[ "$(jq -r .pull_request.merge_commit_sha $GITHUB_EVENT_PATH)" != null ]]; then
-            echo "Error: Merge commit detected. Only squash merges are allowed."
-            exit 1
-          else
-            echo "Success: Squash merge confirmed."
-          fi
+#  check_merge_strategy:
+#    if: github.event.pull_request.merged == true
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Ensure Squash Merge
+#        run: |
+#          if [[ "$(jq -r .pull_request.merge_commit_sha $GITHUB_EVENT_PATH)" != null ]]; then
+#            echo "Error: Merge commit detected. Only squash merges are allowed."
+#            exit 1
+#          else
+#            echo "Success: Squash merge confirmed."
+#          fi

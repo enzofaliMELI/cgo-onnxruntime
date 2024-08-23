@@ -1,0 +1,45 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.22
+
+      - name: Install necessary dependencies
+        run: sudo apt-get update && sudo apt-get install -y gcc g++ make curl
+
+      - name: Set up ONNX Runtime
+        run: |
+          curl -L https://github.com/microsoft/onnxruntime/releases/download/v1.17.1/onnxruntime-linux-x64-1.17.1.tgz \
+          | tar xz -C /usr/local && \
+          ln -s /usr/local/onnxruntime-linux-x64-1.17.1 /usr/local/onnxruntime
+
+      - name: Set environment variables for ONNX Runtime
+        run: |
+          echo "CFLAGS=-I/usr/local/onnxruntime/include" >> $GITHUB_ENV
+          echo "LDFLAGS=-L/usr/local/onnxruntime/lib -lonnxruntime" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=/usr/local/onnxruntime/lib" >> $GITHUB_ENV
+
+      - name: Build the application using Makefile
+        run: make
+
+      - name: Run the Go application
+        run: make run

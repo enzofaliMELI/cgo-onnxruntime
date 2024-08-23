@@ -46,7 +46,7 @@ jobs:
 
   docker-build:
     runs-on: ubuntu-latest
-    needs: build-and-test  # Ensure that this job runs after build-and-test
+    needs: build # Ensure that this job runs after build-and-test
 
     services:
       docker:

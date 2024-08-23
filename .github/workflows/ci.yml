@@ -44,7 +44,7 @@ jobs:
       - name: Run the Go application
         run: make run
 
-  docker-build-2:
+  docker-build-aarch64:
     runs-on: ubuntu-latest
 
     steps:

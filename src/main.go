@@ -1,8 +1,8 @@
 package main
 
 /*
-#cgo CFLAGS: -I${SRCDIR}/onnxruntime -I$HOME/onnxruntime/include
-#cgo LDFLAGS: -L${SRCDIR}/onnxruntime -lmyfuncs -lrunonnx -L$HOME/onnxruntime/lib -lonnxruntime
+#cgo CFLAGS: -I${SRCDIR}/onnxruntime -I/home/runner/onnxruntime/include
+#cgo LDFLAGS: -L${SRCDIR}/onnxruntime -lmyfuncs -lrunonnx -L/home/runner/onnxruntime/lib -lonnxruntime
 
 #include "runonnx.h"
 #include "myfuncs.h"

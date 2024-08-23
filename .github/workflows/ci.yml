@@ -1,0 +1,75 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.22
+
+      - name: Install necessary dependencies
+        run: sudo apt-get update && sudo apt-get install -y gcc g++ make curl
+
+      - name: Set up ONNX Runtime
+        run: |
+          mkdir -p $HOME/onnxruntime
+          curl -L https://github.com/microsoft/onnxruntime/releases/download/v1.17.1/onnxruntime-linux-x64-1.17.1.tgz \
+          | tar xz -C $HOME/onnxruntime --strip-components=1
+
+      - name: Set environment variables for ONNX Runtime
+        run: |
+          echo "CFLAGS=-I$HOME/onnxruntime/include" >> $GITHUB_ENV
+          echo "LDFLAGS=-L$HOME/onnxruntime/lib -lonnxruntime" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=$HOME/onnxruntime/lib" >> $GITHUB_ENV
+
+      - name: Build the application using Makefile
+        run: make
+
+      - name: Run the Go application
+        run: make run
+
+  docker-build-x64:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Docker
+        run: |
+          curl -fsSL https://get.docker.com | sh
+
+      - name: Build Docker Image
+        run: docker build -t my-cgo-app .
+
+      - name: Run Docker Container
+        run: docker run --rm my-cgo-app
+
+  check_merge_strategy:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure Squash Merge
+        run: |
+          if [[ "$(jq -r .pull_request.merge_commit_sha $GITHUB_EVENT_PATH)" != null ]]; then
+            echo "Error: Merge commit detected. Only squash merges are allowed."
+            exit 1
+          else
+            echo "Success: Squash merge confirmed."
+          fi

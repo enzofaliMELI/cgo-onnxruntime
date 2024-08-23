@@ -5,10 +5,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        TARGETARCH: ${TARGETARCH:-arm64}
     volumes:
       - .:/app
     working_dir: /app
     command: make run
-    environment:
-      - CFLAGS=-I/usr/local/onnxruntime/include
-      - LDFLAGS=-L/usr/local/onnxruntime/lib -lonnxruntime

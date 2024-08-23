@@ -1,20 +1,12 @@
 Docker
 
-```docker build -t my-cgo-app .```
+```docker build --build-arg TARGETARCH=arm64 -t my-cgo-app .```
 
-```docker run --name my-cgo-app-container my-cgo-app```
-
-```docker logs my-cgo-app-container```
-
+```docker run --rm my-cgo-app```
 
 Docker-compose
 
-```docker-compose up```
-
 ```docker-compose up --build```
-
-```docker-compose down```
-
 
 onnxruntime C
 

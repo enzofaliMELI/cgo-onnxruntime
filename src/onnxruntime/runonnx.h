@@ -11,6 +11,4 @@ OrtValue* createOrtTensor(const OrtApi* g_ort, const float* input_data, size_t i
 OrtValue* runInference(const OrtApi* g_ort, OrtSession* session, const char** input_names, const OrtValue* const* input_tensors, size_t input_count, const char** output_names, size_t output_count);
 float* getTensorData(const OrtApi* g_ort, OrtValue* tensor);
 
-float* runONNXRuntime(const char* model_path);
-
 #endif // RUNONNX_H

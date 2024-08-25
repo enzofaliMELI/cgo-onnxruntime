@@ -2,18 +2,35 @@ package main
 
 /*
 #cgo CFLAGS: -I${SRCDIR}/onnxruntime -I/home/runner/onnxruntime/include
-#cgo LDFLAGS: -L${SRCDIR}/onnxruntime -lmyfuncs -lrunonnx -L/home/runner/onnxruntime/lib -lonnxruntime
+#cgo LDFLAGS: -L${SRCDIR}/onnxruntime -lrunonnx -L/home/runner/onnxruntime/lib -lonnxruntime
 
 #include "runonnx.h"
-#include "myfuncs.h"
 */
 import "C"
 import (
 	"fmt"
+	"github.com/enzofaliMELI/cgo-onnxruntime/src/onnxruntime"
 	"unsafe"
 )
 
 func main() {
+	// Retrieve the OrtApi pointer
+	api := onnxruntime.GetOrtApi()
+	if api == nil {
+		fmt.Println("Failed to get OrtApi")
+		return
+	}
+
+	// Create the ONNX Runtime environment
+	env1 := onnxruntime.CreateEnv(api)
+	if env1 == nil {
+		fmt.Println("Failed to create ONNX Runtime environment")
+		return
+	}
+
+	fmt.Println("ONNX Runtime environment created successfully")
+
+	/// -----
 
 	// Get the OrtApi pointer
 	gOrt := C.getOrtApi()

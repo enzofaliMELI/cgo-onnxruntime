@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"github.com/enzofaliMELI/cgo-onnxruntime/src/onnxruntime"
-	"reflect"
 )
 
 func main() {
@@ -20,7 +19,6 @@ func main() {
 		fmt.Println("Failed to create ONNX Runtime environment")
 		return
 	}
-	fmt.Println(reflect.TypeOf(env))
 	defer env.ReleaseEnv(api)
 
 	// Create the Session Options
@@ -53,7 +51,17 @@ func main() {
 	}
 	defer outputTensor.ReleaseTensor(api)
 
-	fmt.Println("ONNX Runtime environment created successfully")
+	// Retrieve the Output Data
+	outputData := onnxruntime.GetTensorData(api, outputTensor, 10) // Specify the size of the output tensor
+	if outputData == nil {
+		return
+	}
+
+	// Print the output data
+	fmt.Println("Output Tensor Data:")
+	for i, val := range outputData {
+		fmt.Printf("output[%d] = %f\n", i, val)
+	}
 
 	fmt.Println("Go application finished.")
 }

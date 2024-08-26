@@ -150,3 +150,22 @@ func RunInference(api *C.OrtApi, session *OnnxSession, inputNames []string, inpu
 	}
 	return &OnnxTensor{tensor: outputTensor}
 }
+
+// GetTensorData retrieves data from an output tensor
+func GetTensorData(api *C.OrtApi, tensor *OnnxTensor, size int) []float32 {
+	data := C.getTensorData(api, tensor.tensor)
+	if data == nil {
+		fmt.Println("Failed to get tensor data")
+		return nil
+	}
+
+	// Convert the C pointer to a Go slice
+	output := (*[1 << 30]C.float)(unsafe.Pointer(data))[:size:size]
+
+	// Convert the C float slice to a Go float32 slice
+	goOutput := make([]float32, size)
+	for i := 0; i < size; i++ {
+		goOutput[i] = float32(output[i])
+	}
+	return goOutput
+}

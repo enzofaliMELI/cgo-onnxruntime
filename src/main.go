@@ -37,6 +37,15 @@ func main() {
 	}
 	defer session.ReleaseSession(api)
 
+	// Create the Input Tensor
+	inputData := []float32{1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}
+	inputShape := []int64{1, 10} // Example shape
+	tensor := onnxruntime.CreateTensor(api, inputData, inputShape)
+	if tensor == nil {
+		return
+	}
+	defer tensor.ReleaseTensor(api)
+
 	fmt.Println("ONNX Runtime environment created successfully")
 
 	fmt.Println("Go application finished.")

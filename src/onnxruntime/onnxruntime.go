@@ -28,6 +28,11 @@ type OnnxSession struct {
 	session *C.OrtSession
 }
 
+// OnnxTensor wraps the C struct OrtValue
+type OnnxTensor struct {
+	tensor *C.OrtValue
+}
+
 // GetOrtApi retrieves the OrtApi pointer
 func GetOrtApi() *C.OrtApi {
 	api := C.getOrtApi()
@@ -92,5 +97,26 @@ func (s *OnnxSession) ReleaseSession(api *C.OrtApi) {
 	if s.session != nil {
 		C.releaseSession(api, s.session)
 		s.session = nil // Avoid double free
+	}
+}
+
+// CreateTensor creates an ONNX Runtime tensor
+func CreateTensor(api *C.OrtApi, inputData []float32, inputShape []int64) *OnnxTensor {
+	inputDataSize := C.size_t(len(inputData) * int(unsafe.Sizeof(inputData[0])))
+	inputDim := C.size_t(len(inputShape))
+
+	tensor := C.createOrtTensor(api, (*C.float)(unsafe.Pointer(&inputData[0])), inputDataSize, (*C.int64_t)(unsafe.Pointer(&inputShape[0])), inputDim)
+	if tensor == nil {
+		fmt.Println("Failed to create ONNX Runtime tensor")
+		return nil
+	}
+	return &OnnxTensor{tensor: tensor}
+}
+
+// ReleaseTensor releases an ONNX Runtime tensor
+func (t *OnnxTensor) ReleaseTensor(api *C.OrtApi) {
+	if t.tensor != nil {
+		C.releaseOrtTensor(api, t.tensor)
+		t.tensor = nil // Avoid double free
 	}
 }

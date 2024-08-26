@@ -3,58 +3,57 @@ package main
 import (
 	"fmt"
 	"github.com/enzofaliMELI/cgo-onnxruntime/src/onnxruntime"
+	"log"
 )
 
 func main() {
 	// Retrieve the OrtApi pointer
-	api := onnxruntime.GetOrtApi()
-	if api == nil {
-		fmt.Println("Failed to get OrtApi")
-		return
+	api, err := onnxruntime.GetOrtApi()
+	if err != nil {
+		log.Fatalf("Error retrieving OrtApi pointer: %v", err)
 	}
 
 	// Create the ONNX Runtime environment
-	env := onnxruntime.CreateEnv(api)
-	if env == nil {
-		fmt.Println("Failed to create ONNX Runtime environment")
-		return
+	env, err := onnxruntime.CreateEnv(api)
+	if err != nil {
+		log.Fatalf("Error creating ONNX Runtime environment: %v", err)
 	}
 	defer env.ReleaseEnv(api)
 
 	// Create the Session Options
-	options := onnxruntime.CreateSessionOptions(api)
-	if options == nil {
-		return
+	options, err := onnxruntime.CreateSessionOptions(api)
+	if err != nil {
+		log.Fatalf("Error creating ONNX Runtime session options: %v", err)
 	}
 	defer options.ReleaseSessionOptions(api)
 
 	// Create the Session
-	session := onnxruntime.CreateSession(api, env, "resources/naive_model.onnx", options)
-	if session == nil {
-		return
+	session, err := onnxruntime.CreateSession(api, env, "resources/naive_model.onnx", options)
+	if err != nil {
+		log.Fatalf("Error creating ONNX Runtime session: %v", err)
 	}
 	defer session.ReleaseSession(api)
 
 	// Create the Input Tensor
 	inputShape := []int64{10}                                                 // 1D tensor with 10 elements
 	inputData := []float32{1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0} // Example input
-	tensor := onnxruntime.CreateTensor(api, inputData, inputShape)
-	if tensor == nil {
-		return
+	tensor, err := onnxruntime.CreateTensor(api, inputData, inputShape)
+	if err != nil {
+		log.Fatalf("Error creating ONNX Runtime tensor: %v", err)
 	}
 	defer tensor.ReleaseTensor(api)
 
 	outputNames := []string{"output"}
-	outputTensor := onnxruntime.RunInference(api, session, []string{"input"}, []*onnxruntime.OnnxTensor{tensor}, outputNames)
-	if outputTensor == nil {
-		return
+	outputTensor, err := onnxruntime.RunInference(api, session, []string{"input"}, []*onnxruntime.OnnxTensor{tensor}, outputNames)
+	if err != nil {
+		log.Fatalf("Error running ONNX Runtime inference: %v", err)
 	}
 	defer outputTensor.ReleaseTensor(api)
 
 	// Retrieve the Output Data
-	outputData := onnxruntime.GetTensorData(api, outputTensor, 10) // Specify the size of the output tensor
-	if outputData == nil {
-		return
+	outputData, err := onnxruntime.GetTensorData(api, outputTensor, 10) // Specify the size of the output tensor
+	if err != nil {
+		log.Fatalf("Error retrieving tensor data: %v", err)
 	}
 
 	// Print the output data

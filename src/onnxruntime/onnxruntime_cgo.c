@@ -3,18 +3,23 @@
 #include <stdio.h>
 
 // Function to retrieve the OrtApi pointer
-const OrtApi* getOrtApi() {
-    return OrtGetApiBase()->GetApi(ORT_API_VERSION);
+const OrtApi* getOrtApi(char** error_message) {
+    const OrtApi* api = OrtGetApiBase()->GetApi(ORT_API_VERSION);
+    if (api == NULL) {
+        const char* error_msg = "Failed to retrieve OrtApi pointer.";
+        *error_message = strdup(error_msg);
+    }
+    return api;
 }
 
 // Function to create the ONNX Runtime environment
-OrtEnv* createEnv(const OrtApi* api) {
+OrtEnv* createEnv(const OrtApi* api, char** error_message) {
     OrtEnv* env;
-    OrtStatus* status;
-
-    status = api->CreateEnv(ORT_LOGGING_LEVEL_WARNING, "test", &env);
+    OrtStatus* status= api->CreateEnv(ORT_LOGGING_LEVEL_WARNING, "test", &env);
     if (status != NULL) {
         printf("Error: %s\n", api->GetErrorMessage(status));
+        const char* error_msg = api->GetErrorMessage(status);
+        *error_message = strdup(error_msg);
         api->ReleaseStatus(status);
         return NULL;
     }
@@ -30,11 +35,12 @@ void releaseEnv(const OrtApi* api, OrtEnv* env) {
 }
 
 // Function to create the ONNX Runtime session options
-OrtSessionOptions* createSessionOptions(const OrtApi* api) {
+OrtSessionOptions* createSessionOptions(const OrtApi* api, char** error_message) {
     OrtSessionOptions* session_options;
     OrtStatus* status = api->CreateSessionOptions(&session_options);
     if (status != NULL) {
-        printf("Error: %s\n", api->GetErrorMessage(status));
+        const char* error_msg = api->GetErrorMessage(status);
+        *error_message = strdup(error_msg);
         api->ReleaseStatus(status);
         return NULL;
     }
@@ -50,11 +56,12 @@ void releaseSessionOptions(const OrtApi* api, OrtSessionOptions* session_options
 }
 
 // Function to create an ONNX Runtime session
-OrtSession* createSession(const OrtApi* api, OrtEnv* env, const char* model_path, OrtSessionOptions* session_options) {
+OrtSession* createSession(const OrtApi* api, OrtEnv* env, const char* model_path, OrtSessionOptions* session_options, char** error_message) {
     OrtSession* session;
     OrtStatus* status = api->CreateSession(env, model_path, session_options, &session);
     if (status != NULL) {
-        printf("Error: %s\n", api->GetErrorMessage(status));
+        const char* error_msg = api->GetErrorMessage(status);
+        *error_message = strdup(error_msg);
         api->ReleaseStatus(status);
         return NULL;
     }
@@ -69,50 +76,24 @@ void releaseSession(const OrtApi* api, OrtSession* session) {
     }
 }
 
-OrtValue* createOrtTensor(const OrtApi* g_ort, const float* input_data, size_t input_data_size, const int64_t* input_shape, size_t input_dim) {
-    OrtMemoryInfo* memory_info;
-    OrtValue* input_tensor;
-    OrtStatus* status;
-
-    // Allocate memory info for the input tensor
-    status = g_ort->CreateCpuMemoryInfo(OrtArenaAllocator, OrtMemTypeDefault, &memory_info);
-    if (status != NULL) {
-        printf("Failed to create memory info.\nError: %s\n", g_ort->GetErrorMessage(status));
-        g_ort->ReleaseStatus(status);
-        return NULL;
-    }
-
-    // Create the input tensor
-    status = g_ort->CreateTensorWithDataAsOrtValue(memory_info, (void*)input_data, input_data_size, input_shape, input_dim, ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT, &input_tensor);
-    if (status != NULL) {
-        printf("Failed to create input tensor.\nError: %s\n", g_ort->GetErrorMessage(status));
-        g_ort->ReleaseStatus(status);
-        g_ort->ReleaseMemoryInfo(memory_info);
-        return NULL;
-    }
-
-    // Release memory info after tensor creation
-    g_ort->ReleaseMemoryInfo(memory_info);
-
-    return input_tensor;
-}
-
 // Function to create an input tensor
-OrtValue* createOrtTensor2(const OrtApi* api, const float* input_data, size_t input_data_size, const int64_t* input_shape, size_t input_dim) {
+OrtValue* createOrtTensor(const OrtApi* api, const float* input_data, size_t input_data_size, const int64_t* input_shape, size_t input_dim, char** error_message) {
     OrtMemoryInfo* memory_info;
     OrtStatus* status = api->CreateCpuMemoryInfo(OrtArenaAllocator, OrtMemTypeDefault, &memory_info);
     if (status != NULL) {
-        printf("Error: %s\n", api->GetErrorMessage(status));
+        const char* error_msg = api->GetErrorMessage(status);
+        *error_message = strdup(error_msg);
         api->ReleaseStatus(status);
         return NULL;
     }
 
     OrtValue* tensor = NULL;
-    status = api->CreateTensorWithDataAsOrtValue(memory_info, (void*)input_data, input_data_size * sizeof(float), input_shape, input_dim, ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT, &tensor);
+    status = api->CreateTensorWithDataAsOrtValue(memory_info, (void*)input_data, input_data_size, input_shape, input_dim, ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT, &tensor);
     api->ReleaseMemoryInfo(memory_info);
 
     if (status != NULL) {
-        printf("Error: %s\n", api->GetErrorMessage(status));
+        const char* error_msg = api->GetErrorMessage(status);
+        *error_message = strdup(error_msg);
         api->ReleaseStatus(status);
         return NULL;
     }
@@ -128,12 +109,13 @@ void releaseOrtTensor(const OrtApi* api, OrtValue* tensor) {
 }
 
 // Function to run the model inference, including creating and returning the output tensor
-OrtValue* runInference(const OrtApi* api, OrtSession* session, const char** input_names, const OrtValue* const* input_tensors, size_t input_count, const char** output_names, size_t output_count) {
+OrtValue* runInference(const OrtApi* api, OrtSession* session, const char** input_names, const OrtValue* const* input_tensors, size_t input_count, const char** output_names, size_t output_count, char** error_message) {
     OrtValue* output_tensor = NULL;
     OrtStatus* status = api->Run(session, NULL, input_names, input_tensors, input_count, output_names, output_count, &output_tensor);
 
     if (status != NULL) {
-        printf("Error: %s\n", api->GetErrorMessage(status));
+        const char* error_msg = api->GetErrorMessage(status);
+        *error_message = strdup(error_msg);
         api->ReleaseStatus(status);
         return NULL;
     }
@@ -142,12 +124,13 @@ OrtValue* runInference(const OrtApi* api, OrtSession* session, const char** inpu
 }
 
 // Function to retrieve data from an output tensor
-float* getTensorData(const OrtApi* api, OrtValue* tensor) {
+float* getTensorData(const OrtApi* api, OrtValue* tensor, char** error_message) {
     float* output_data;
     OrtStatus* status = api->GetTensorMutableData(tensor, (void**)&output_data);
 
     if (status != NULL) {
-        printf("Error: %s\n", api->GetErrorMessage(status));
+        const char* error_msg = api->GetErrorMessage(status);
+        *error_message = strdup(error_msg);
         api->ReleaseStatus(status);
         return NULL;
     }

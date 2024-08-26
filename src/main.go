@@ -21,6 +21,16 @@ func main() {
 		return
 	}
 	fmt.Println(reflect.TypeOf(env))
+	defer env.ReleaseEnv(api)
+
+	// Create the Session Options
+	options := onnxruntime.CreateSessionOptions(api)
+	if options == nil {
+		return
+	}
+	fmt.Println(reflect.TypeOf(options))
+	defer options.ReleaseSessionOptions(api)
+
 	fmt.Println("ONNX Runtime environment created successfully")
 
 	fmt.Println("Go application finished.")

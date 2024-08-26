@@ -28,8 +28,14 @@ func main() {
 	if options == nil {
 		return
 	}
-	fmt.Println(reflect.TypeOf(options))
 	defer options.ReleaseSessionOptions(api)
+
+	// Create the Session
+	session := onnxruntime.CreateSession(api, env, "resources/naive_model.onnx", options)
+	if session == nil {
+		return
+	}
+	defer session.ReleaseSession(api)
 
 	fmt.Println("ONNX Runtime environment created successfully")
 

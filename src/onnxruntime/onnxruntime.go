@@ -10,6 +10,7 @@ package onnxruntime
 import "C"
 import (
 	"fmt"
+	"unsafe"
 )
 
 // OnnxEnv wraps the C struct OrtEnv
@@ -20,6 +21,11 @@ type OnnxEnv struct {
 // OnnxSessionOptions wraps the C struct OrtSessionOptions
 type OnnxSessionOptions struct {
 	options *C.OrtSessionOptions
+}
+
+// OnnxSession wraps the C struct OrtSession
+type OnnxSession struct {
+	session *C.OrtSession
 }
 
 // GetOrtApi retrieves the OrtApi pointer
@@ -65,5 +71,26 @@ func (o *OnnxSessionOptions) ReleaseSessionOptions(api *C.OrtApi) {
 	if o.options != nil {
 		C.releaseSessionOptions(api, o.options)
 		o.options = nil // Avoid double free
+	}
+}
+
+// CreateSession initializes the ONNX Runtime session
+func CreateSession(api *C.OrtApi, env *OnnxEnv, modelPath string, options *OnnxSessionOptions) *OnnxSession {
+	cModelPath := C.CString(modelPath)
+	defer C.free(unsafe.Pointer(cModelPath))
+
+	session := C.createSession(api, env.env, cModelPath, options.options)
+	if session == nil {
+		fmt.Println("Failed to create ONNX Runtime session")
+		return nil
+	}
+	return &OnnxSession{session: session}
+}
+
+// ReleaseSession releases the ONNX Runtime session
+func (s *OnnxSession) ReleaseSession(api *C.OrtApi) {
+	if s.session != nil {
+		C.releaseSession(api, s.session)
+		s.session = nil // Avoid double free
 	}
 }

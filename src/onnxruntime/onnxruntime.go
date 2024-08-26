@@ -120,3 +120,33 @@ func (t *OnnxTensor) ReleaseTensor(api *C.OrtApi) {
 		t.tensor = nil // Avoid double free
 	}
 }
+
+// RunInference runs inference on the model and returns the output tensor
+func RunInference(api *C.OrtApi, session *OnnxSession, inputNames []string, inputTensors []*OnnxTensor, outputNames []string) *OnnxTensor {
+	// Convert input names to C strings
+	cInputNames := make([]*C.char, len(inputNames))
+	for i, name := range inputNames {
+		cInputNames[i] = C.CString(name)
+		defer C.free(unsafe.Pointer(cInputNames[i]))
+	}
+
+	// Convert output names to C strings
+	cOutputNames := make([]*C.char, len(outputNames))
+	for i, name := range outputNames {
+		cOutputNames[i] = C.CString(name)
+		defer C.free(unsafe.Pointer(cOutputNames[i]))
+	}
+
+	// Convert input tensors to C array
+	cInputTensors := make([]*C.OrtValue, len(inputTensors))
+	for i, tensor := range inputTensors {
+		cInputTensors[i] = tensor.tensor
+	}
+
+	outputTensor := C.runInference(api, session.session, &cInputNames[0], &cInputTensors[0], C.size_t(len(inputTensors)), &cOutputNames[0], C.size_t(len(outputNames)))
+	if outputTensor == nil {
+		fmt.Println("Failed to run inference")
+		return nil
+	}
+	return &OnnxTensor{tensor: outputTensor}
+}

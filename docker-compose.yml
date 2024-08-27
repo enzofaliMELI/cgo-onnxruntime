@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  my-cgo-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        TARGETARCH: ${TARGETARCH:-arm64}
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: make run

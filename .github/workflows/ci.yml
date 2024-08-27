@@ -1,0 +1,95 @@
+name: CI Pipeline
+
+on:
+#  push:
+#    branches:
+#      - main
+#      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build-x64:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.22
+
+      - name: Install necessary dependencies
+        run: sudo apt-get update && sudo apt-get install -y gcc g++ make curl
+
+      - name: Set up ONNX Runtime
+        run: |
+          mkdir -p $HOME/onnxruntime
+          curl -L https://github.com/microsoft/onnxruntime/releases/download/v1.17.1/onnxruntime-linux-x64-1.17.1.tgz \
+          | tar xz -C $HOME/onnxruntime --strip-components=1
+
+      - name: Set environment variables for ONNX Runtime
+        run: |
+          echo "CFLAGS=-I$HOME/onnxruntime/include" >> $GITHUB_ENV
+          echo "LDFLAGS=-L$HOME/onnxruntime/lib -lonnxruntime" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=$HOME/onnxruntime/lib" >> $GITHUB_ENV
+
+      - name: Build the application using Makefile
+        run: make
+
+      - name: Run the Go application
+        run: make run
+
+#  build-aarch64:
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v3
+#
+#      - name: Set up Go
+#        uses: actions/setup-go@v4
+#        with:
+#          go-version: 1.22
+#
+#      - name: Install necessary dependencies
+#        run: sudo apt-get update && sudo apt-get install -y gcc g++ make curl
+#
+#      - name: Set up ONNX Runtime
+#        run: |
+#          mkdir -p $HOME/onnxruntime
+#          curl -L https://github.com/microsoft/onnxruntime/releases/download/v1.17.1/onnxruntime-linux-aarch64-1.17.1.tgz \
+#          | tar xz -C $HOME/onnxruntime --strip-components=1
+#
+#      - name: Set environment variables for ONNX Runtime
+#        run: |
+#          echo "CFLAGS=-I$HOME/onnxruntime/include" >> $GITHUB_ENV
+#          echo "LDFLAGS=-L$HOME/onnxruntime/lib -lonnxruntime" >> $GITHUB_ENV
+#          echo "LD_LIBRARY_PATH=$HOME/onnxruntime/lib" >> $GITHUB_ENV
+#
+#      - name: Build the application using Makefile
+#        run: make
+#
+#      - name: Run the Go application
+#        run: make run
+
+  docker-build-x64:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Docker
+        run: |
+          curl -fsSL https://get.docker.com | sh
+
+      - name: Build Docker Image
+        run: docker build -t my-cgo-app .
+
+      - name: Run Docker Container
+        run: docker run --rm my-cgo-app

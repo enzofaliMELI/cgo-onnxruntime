@@ -9,7 +9,7 @@ package onnxruntime
 */
 import "C"
 import (
-	"fmt"
+	"errors"
 	"unsafe"
 )
 
@@ -34,23 +34,25 @@ type OnnxTensor struct {
 }
 
 // GetOrtApi retrieves the OrtApi pointer
-func GetOrtApi() *C.OrtApi {
-	api := C.getOrtApi()
+func GetOrtApi() (*C.OrtApi, error) {
+	var errorMessage *C.char
+	api := C.getOrtApi(&errorMessage)
 	if api == nil {
-		fmt.Println("Failed to get OrtApi")
-		return nil
+		defer C.free(unsafe.Pointer(errorMessage))
+		return nil, errors.New(C.GoString(errorMessage))
 	}
-	return api
+	return api, nil
 }
 
 // CreateEnv initializes the ONNX Runtime environment
-func CreateEnv(api *C.OrtApi) *OnnxEnv {
-	env := C.createEnv(api)
+func CreateEnv(api *C.OrtApi) (*OnnxEnv, error) {
+	var errorMessage *C.char
+	env := C.createEnv(api, &errorMessage)
 	if env == nil {
-		fmt.Println("Failed to create ONNX Runtime environment")
-		return nil
+		defer C.free(unsafe.Pointer(errorMessage)) // Ensure the C string is freed
+		return nil, errors.New(C.GoString(errorMessage))
 	}
-	return &OnnxEnv{env: env}
+	return &OnnxEnv{env: env}, nil
 }
 
 // ReleaseEnv releases the ONNX Runtime environment
@@ -62,13 +64,14 @@ func (e *OnnxEnv) ReleaseEnv(api *C.OrtApi) {
 }
 
 // CreateSessionOptions initializes the ONNX Runtime session options
-func CreateSessionOptions(api *C.OrtApi) *OnnxSessionOptions {
-	options := C.createSessionOptions(api)
-	if options == nil {
-		fmt.Println("Failed to create ONNX Runtime session options")
-		return nil
+func CreateSessionOptions(api *C.OrtApi) (*OnnxSessionOptions, error) {
+	var errorMessage *C.char
+	sessionOptions := C.createSessionOptions(api, &errorMessage)
+	if sessionOptions == nil {
+		defer C.free(unsafe.Pointer(errorMessage))
+		return nil, errors.New(C.GoString(errorMessage))
 	}
-	return &OnnxSessionOptions{options: options}
+	return &OnnxSessionOptions{options: sessionOptions}, nil
 }
 
 // ReleaseSessionOptions releases the ONNX Runtime session options
@@ -80,16 +83,17 @@ func (o *OnnxSessionOptions) ReleaseSessionOptions(api *C.OrtApi) {
 }
 
 // CreateSession initializes the ONNX Runtime session
-func CreateSession(api *C.OrtApi, env *OnnxEnv, modelPath string, options *OnnxSessionOptions) *OnnxSession {
+func CreateSession(api *C.OrtApi, env *OnnxEnv, modelPath string, options *OnnxSessionOptions) (*OnnxSession, error) {
 	cModelPath := C.CString(modelPath)
 	defer C.free(unsafe.Pointer(cModelPath))
 
-	session := C.createSession(api, env.env, cModelPath, options.options)
+	var errorMessage *C.char
+	session := C.createSession(api, env.env, cModelPath, options.options, &errorMessage)
 	if session == nil {
-		fmt.Println("Failed to create ONNX Runtime session")
-		return nil
+		defer C.free(unsafe.Pointer(errorMessage))
+		return nil, errors.New(C.GoString(errorMessage))
 	}
-	return &OnnxSession{session: session}
+	return &OnnxSession{session: session}, nil
 }
 
 // ReleaseSession releases the ONNX Runtime session
@@ -101,16 +105,17 @@ func (s *OnnxSession) ReleaseSession(api *C.OrtApi) {
 }
 
 // CreateTensor creates an ONNX Runtime tensor
-func CreateTensor(api *C.OrtApi, inputData []float32, inputShape []int64) *OnnxTensor {
+func CreateTensor(api *C.OrtApi, inputData []float32, inputShape []int64) (*OnnxTensor, error) {
 	inputDataSize := C.size_t(len(inputData) * int(unsafe.Sizeof(inputData[0])))
 	inputDim := C.size_t(len(inputShape))
 
-	tensor := C.createOrtTensor(api, (*C.float)(unsafe.Pointer(&inputData[0])), inputDataSize, (*C.int64_t)(unsafe.Pointer(&inputShape[0])), inputDim)
+	var errorMessage *C.char
+	tensor := C.createOrtTensor(api, (*C.float)(unsafe.Pointer(&inputData[0])), inputDataSize, (*C.int64_t)(unsafe.Pointer(&inputShape[0])), inputDim, &errorMessage)
 	if tensor == nil {
-		fmt.Println("Failed to create ONNX Runtime tensor")
-		return nil
+		defer C.free(unsafe.Pointer(errorMessage))
+		return nil, errors.New(C.GoString(errorMessage))
 	}
-	return &OnnxTensor{tensor: tensor}
+	return &OnnxTensor{tensor: tensor}, nil
 }
 
 // ReleaseTensor releases an ONNX Runtime tensor
@@ -122,7 +127,7 @@ func (t *OnnxTensor) ReleaseTensor(api *C.OrtApi) {
 }
 
 // RunInference runs inference on the model and returns the output tensor
-func RunInference(api *C.OrtApi, session *OnnxSession, inputNames []string, inputTensors []*OnnxTensor, outputNames []string) *OnnxTensor {
+func RunInference(api *C.OrtApi, session *OnnxSession, inputNames []string, inputTensors []*OnnxTensor, outputNames []string) (*OnnxTensor, error) {
 	// Convert input names to C strings
 	cInputNames := make([]*C.char, len(inputNames))
 	for i, name := range inputNames {
@@ -143,20 +148,22 @@ func RunInference(api *C.OrtApi, session *OnnxSession, inputNames []string, inpu
 		cInputTensors[i] = tensor.tensor
 	}
 
-	outputTensor := C.runInference(api, session.session, &cInputNames[0], &cInputTensors[0], C.size_t(len(inputTensors)), &cOutputNames[0], C.size_t(len(outputNames)))
+	var errorMessage *C.char
+	outputTensor := C.runInference(api, session.session, &cInputNames[0], &cInputTensors[0], C.size_t(len(inputTensors)), &cOutputNames[0], C.size_t(len(outputNames)), &errorMessage)
 	if outputTensor == nil {
-		fmt.Println("Failed to run inference")
-		return nil
+		defer C.free(unsafe.Pointer(errorMessage))
+		return nil, errors.New(C.GoString(errorMessage))
 	}
-	return &OnnxTensor{tensor: outputTensor}
+	return &OnnxTensor{tensor: outputTensor}, nil
 }
 
 // GetTensorData retrieves data from an output tensor
-func GetTensorData(api *C.OrtApi, tensor *OnnxTensor, size int) []float32 {
-	data := C.getTensorData(api, tensor.tensor)
+func GetTensorData(api *C.OrtApi, tensor *OnnxTensor, size int) ([]float32, error) {
+	var errorMessage *C.char
+	data := C.getTensorData(api, tensor.tensor, &errorMessage)
 	if data == nil {
-		fmt.Println("Failed to get tensor data")
-		return nil
+		defer C.free(unsafe.Pointer(errorMessage)) // Ensure the C string is freed
+		return nil, errors.New(C.GoString(errorMessage))
 	}
 
 	// Convert the C pointer to a Go slice
@@ -167,5 +174,5 @@ func GetTensorData(api *C.OrtApi, tensor *OnnxTensor, size int) []float32 {
 	for i := 0; i < size; i++ {
 		goOutput[i] = float32(output[i])
 	}
-	return goOutput
+	return goOutput, nil
 }

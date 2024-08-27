@@ -21,14 +21,14 @@ func main() {
 	defer env.ReleaseEnv(api)
 
 	// Create the Session Options
-	options, err := onnxruntime.CreateSessionOptions(api)
+	sessionOptions, err := onnxruntime.CreateSessionOptions(api)
 	if err != nil {
 		log.Fatalf("Error creating ONNX Runtime session options: %v", err)
 	}
-	defer options.ReleaseSessionOptions(api)
+	defer sessionOptions.ReleaseSessionOptions(api)
 
 	// Create the Session
-	session, err := onnxruntime.CreateSession(api, env, "resources/naive_model.onnx", options)
+	session, err := onnxruntime.CreateSession(api, env, "resources/naive_model.onnx", sessionOptions)
 	if err != nil {
 		log.Fatalf("Error creating ONNX Runtime session: %v", err)
 	}
@@ -43,8 +43,10 @@ func main() {
 	}
 	defer tensor.ReleaseTensor(api)
 
+	inputNames := []string{"input"}
 	outputNames := []string{"output"}
-	outputTensor, err := onnxruntime.RunInference(api, session, []string{"input"}, []*onnxruntime.OnnxTensor{tensor}, outputNames)
+
+	outputTensor, err := onnxruntime.RunInference(api, session, inputNames, []*onnxruntime.OnnxTensor{tensor}, outputNames)
 	if err != nil {
 		log.Fatalf("Error running ONNX Runtime inference: %v", err)
 	}

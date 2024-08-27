@@ -77,7 +77,7 @@ void releaseSession(const OrtApi* api, OrtSession* session) {
 }
 
 // Function to create an input tensor
-OrtValue* createOrtTensor(const OrtApi* api, const float* input_data, size_t input_data_size, const int64_t* input_shape, size_t input_dim, char** error_message) {
+OrtValue* createOrtTensor(const OrtApi* api, const float* input_data, size_t input_data_size, const int64_t* input_shape, size_t input_shape_len, char** error_message) {
     OrtMemoryInfo* memory_info;
     OrtStatus* status = api->CreateCpuMemoryInfo(OrtArenaAllocator, OrtMemTypeDefault, &memory_info);
     if (status != NULL) {
@@ -88,7 +88,7 @@ OrtValue* createOrtTensor(const OrtApi* api, const float* input_data, size_t inp
     }
 
     OrtValue* tensor = NULL;
-    status = api->CreateTensorWithDataAsOrtValue(memory_info, (void*)input_data, input_data_size, input_shape, input_dim, ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT, &tensor);
+    status = api->CreateTensorWithDataAsOrtValue(memory_info, (void*)input_data, input_data_size, input_shape, input_shape_len, ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT, &tensor);
     api->ReleaseMemoryInfo(memory_info);
 
     if (status != NULL) {

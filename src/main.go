@@ -4,9 +4,19 @@ import (
 	"fmt"
 	"github.com/enzofaliMELI/cgo-onnxruntime/src/onnxruntime"
 	"log"
+	"os"
 )
 
 func main() {
+	// Assuming the ONNX library is located in the project directory under "src/onnxruntime/linux_aarch64/lib"
+	libDir := "/Users/efaliveni/Desktop/projects/cgo-onnxruntime/src/onnxruntime/linux_aarch64/lib"
+
+	// Set the LD_LIBRARY_PATH environment variable to include the directory containing the ONNX Runtime library
+	err := os.Setenv("LD_LIBRARY_PATH", libDir)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to set LD_LIBRARY_PATH: %v", err))
+	}
+
 	// Retrieve the OrtApi pointer
 	api, err := onnxruntime.GetOrtApi()
 	if err != nil {

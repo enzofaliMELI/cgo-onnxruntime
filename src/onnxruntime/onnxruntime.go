@@ -1,8 +1,8 @@
 package onnxruntime
 
 /*
-#cgo CFLAGS: -I${SRCDIR}/onnxruntime -I/home/runner/onnxruntime/include
-#cgo LDFLAGS: -L${SRCDIR}/onnxruntime -L/home/runner/onnxruntime/lib -lonnxruntime
+#cgo CFLAGS: -I./linux_aarch64/include
+#cgo LDFLAGS: -L./linux_aarch64/lib -lonnxruntime
 
 #include "onnxruntime_cgo.h"
 
